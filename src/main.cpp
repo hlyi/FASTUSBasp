@@ -293,8 +293,8 @@ static void Get_SerialNum(void)
 int
 main()
 {
-   //RCC::defaultClockSetup();
-   RCC::clockAt48mhz();
+   RCC::defaultClockSetup();
+   //RCC::clockAt48mhz();
 
    //set up all the clocks
    RCC::enable(INBUILT_LED_RCC);
@@ -303,8 +303,8 @@ main()
    RCC::enable(ISP_BUS_RCC);
 
    //setup onboard led 
-   led.assign(INBUILT_LED_PORT, INBUILT_LED);
-   led.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_PUSHPULL);
+   led.assign(INBUILT_LED_PORT, INBUILT_LED, true);
+   led.setMode(PinMode::OUTPUT_2MHZ, PinConfig::OUTPUT_OPENDRAIN);
    led.on();
 
 #ifdef DEBUG
