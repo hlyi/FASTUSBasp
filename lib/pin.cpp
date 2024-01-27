@@ -72,10 +72,11 @@ uint8_t pin::_getNativePinConfig(PinConfig pc)
 
 pin::pin(volatile uint32_t pinBaseAddr, uint32_t port): _pinBaseAddr(pinBaseAddr), _port(port) {}
 
-void pin::assign(volatile uint32_t pinBaseAddr, uint32_t port)
+void pin::assign(volatile uint32_t pinBaseAddr, uint32_t port, bool reverse)
 {
   _pinBaseAddr = pinBaseAddr;
   _port = port;
+  _reverse = reverse;
 }
 
 void pin::setMode(PinMode pm, PinConfig pc)
@@ -85,12 +86,20 @@ void pin::setMode(PinMode pm, PinConfig pc)
 
 void pin::on()
 {
-  gpio_set(_pinBaseAddr, _port);
+  if (_reverse ) {
+    gpio_clear(_pinBaseAddr, _port);
+  }else {
+    gpio_set(_pinBaseAddr, _port);
+  }
 }
 
 void pin::off()
 {
-  gpio_clear(_pinBaseAddr, _port);
+  if (_reverse ) {
+    gpio_set(_pinBaseAddr, _port);
+  }else {
+    gpio_clear(_pinBaseAddr, _port);
+  }
 }
 
 void pin::toggle()
@@ -100,5 +109,5 @@ void pin::toggle()
 
 bool pin::get()
 {
-  return gpio_get(_pinBaseAddr, _port);
+  return gpio_get(_pinBaseAddr, _port) ? ! _reverse : _reverse;
 }

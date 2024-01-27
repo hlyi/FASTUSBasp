@@ -53,12 +53,14 @@ class pin
 
   uint8_t _getNativePinConfig(PinConfig pc);
 
+  bool _reverse;
+
 public:
   pin(volatile uint32_t pinBaseAddr, uint32_t port);
   pin() {}
 
   
-  void assign(volatile uint32_t pinBaseAddr, uint32_t port);
+  void assign(volatile uint32_t pinBaseAddr, uint32_t port, bool reverse = false);
   void setMode(PinMode pm, PinConfig pc);
   void on();
   void off();
