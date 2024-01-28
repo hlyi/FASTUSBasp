@@ -26,6 +26,10 @@
 #include <string.h>
 #include "queue.h"
 #include <libopencm3/stm32/desig.h>
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/rtc.h>
+#include <libopencm3/stm32/pwr.h>
+#include <libopencm3/cm3/scb.h>
 
 #if USBDPLUS_WRONG_PULLUP == 1
 
@@ -53,7 +57,11 @@ extern "C"
 #define USBASP_FUNC_WRITEEEPROM      8
 #define USBASP_FUNC_SETLONGADDRESS   9
 #define USBASP_FUNC_SETISPSCK        10
+#define USBASP_FUNC_DAPBOOT_BL       98
 #define USBASP_FUNC_GETCAPABILITIES  127
+
+// bootloader magic
+#define DAPBOOT_MAGIC           0x4F42U
 
 // programming state
 #define PROG_STATE_IDLE         0
@@ -73,6 +81,9 @@ static uint8_t prog_state = PROG_STATE_IDLE;
 static uint16_t prog_pagesize;
 static uint8_t prog_blockflags;
 static uint8_t prog_pagecounter;
+
+static uint8_t reboot_device = 0;
+static void restart_to_bootloader(void);
 
 #include "isp.h"
 
@@ -358,8 +369,12 @@ main()
           }
            }
         usbd_poll(usbd_dev);
+	if (reboot_device) break;
      }
-
+   if ( reboot_device ){
+      usbd_disconnect(usbd_dev,true);
+      restart_to_bootloader();
+   }
    return 0;
 }
 
@@ -688,8 +703,23 @@ isp_control_endpoint(usbd_device *usb, struct usb_setup_data *req,
         prog_address = (req->wIndex << 16) | req->wValue;
         (*len) = 0;
      }
+   else if (req->bRequest == USBASP_FUNC_DAPBOOT_BL)
+     {
+        reboot_device = 1;
+     }
 
    return USBD_REQ_HANDLED;
+}
+
+static void restart_to_bootloader(void)
+{
+  rcc_periph_clock_enable(RCC_PWR);
+  rcc_periph_clock_enable(RCC_BKP);
+
+  pwr_disable_backup_domain_write_protect();
+  MMIO16(BACKUP_REGS_BASE + 4) = DAPBOOT_MAGIC;
+  pwr_enable_backup_domain_write_protect();
+  scb_reset_system();
 }
 
 static void
